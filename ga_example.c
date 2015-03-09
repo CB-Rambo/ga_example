@@ -59,7 +59,7 @@ static void cost_function(s_chromosome *c)
 
 static int init_gene()
 {
-	return rand() % 10;
+	return rand() % 20;
 }
 
 
