@@ -16,10 +16,11 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
+#include <omp.h>
 
 
 #define		MAX_ITER	5000	/**< maximum number of iterations to perform */
-#define		EPSILON 	1e-8	/**< minimum value for objective function */
+#define		EPSILON 	1e-7	/**< minimum value for objective function */
 #define		NUM_GENES 15			/**< number of genes for this cost-function example */
 #define		RHO				0.9		/**< crossover probability */
 #define		MUT_RATE	0.1		/**< gene mutation rate in percentage */
@@ -212,10 +213,14 @@ int main(int argc, char *argv[])
 #endif
 
 		double F = 0.F;
+#pragma omp parallel shared (F, chromos1) private(i)
+		{
+		#pragma omp for schedule(dynamic) nowait
 		for (i = 0; i < pop_num; i++)
 		{
 			cost_function(chromos1 + i);	// compute cost function for each chromosome
 			F += chromos1[i].fit;
+		}
 		}
 #if	DEBUG == 1
 		printf("Done:\t\t%f\n", chromos1[0].fit);
@@ -230,16 +235,23 @@ int main(int argc, char *argv[])
 		printf("Selection probabilities...");
 #endif
 		double C = 0.F;
+#pragma omp parallel shared (C, chromos1) private(i)
+		{
+		#pragma omp for schedule(dynamic) nowait
 		for (i = 0; i < pop_num; i++)		// Chromosome selection probabilities
 		{
 			chromos1[i].prob = chromos1[i].fit / F;
 			C += chromos1[i].prob;
 			chromos1[i].prob = C;
 		}
+		}
 #if	DEBUG == 1
 		printf("Done\n");
 		printf("Selecting...");
 #endif
+#pragma omp parallel shared (chromos1, chromos2) private(i)
+		{
+		#pragma omp for schedule(dynamic) nowait
 		for (i = 0; i < pop_num; i++)
 		{
 			float R = rand2(C);		// generate a random number between 0 and C
@@ -248,6 +260,7 @@ int main(int argc, char *argv[])
 				if (R <= chromos1[ii].prob)
 					break;
 			copy_chromosome(chromos2 + i, chromos1 + ii);
+		}
 		}
 		swap_chromosomes(chromos1, chromos2, pop_num);
 #if	DEBUG == 1
@@ -261,6 +274,9 @@ int main(int argc, char *argv[])
 			float r = rand2(1.F);		// generate a random number between 0 and 1.0
 			R[i] = (r < RHO) ? 0 : 1;
 		}
+#pragma omp parallel shared (R, chromos1) private(i)
+		{
+		#pragma omp for schedule(dynamic) nowait
 		for (i = 0; i < pop_num; i++)
 		{
 			if (R[i])
@@ -274,6 +290,7 @@ int main(int argc, char *argv[])
 				for (int j = posi; j < NUM_GENES; j++)
 					chromos1[i].genes[j] = chromos1[ii].genes[j];
 			}
+		}
 		}
 #if	DEBUG == 1
 		printf("Done\n");
