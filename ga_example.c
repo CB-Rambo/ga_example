@@ -18,10 +18,12 @@
 #include <math.h>
 
 
-#define		EPSILON 	1e-3	/**< minimum value for objective function */
-#define		NUM_GENES 4			/**< number of genes for this cost-function example */
-#define		RHO				0.6		/**< crossover probability */
-#define		MUT_RATE	10		/**< gene mutation rate */
+#define		MAX_ITER	5000	/**< maximum number of iterations to perform */
+#define		EPSILON 	1e-8	/**< minimum value for objective function */
+#define		NUM_GENES 15			/**< number of genes for this cost-function example */
+#define		RHO				0.9		/**< crossover probability */
+#define		MUT_RATE	0.1		/**< gene mutation rate in percentage */
+#define		DEBUG			0			/**< macro to print debug messages or not */
 
 
 /**
@@ -32,9 +34,9 @@ typedef struct s_chromosome
 {
 	int *genes;							/**< pointer to an array of genes */
 	unsigned int num_genes;	/**< number of genes in the chromosome */
-	float objective;				/**< result of objective value for the chromosome */
-	float fit;							/**< fitness value of the chromosome */
-	float prob;							/**< probability of the chromosome to be selected*/
+	double objective;				/**< result of objective value for the chromosome */
+	double fit;							/**< fitness value of the chromosome */
+	double prob;						/**< probability of the chromosome to be selected*/
 } s_chromosome;
 
 
@@ -49,17 +51,23 @@ typedef struct s_chromosome
 */
 static void cost_function(s_chromosome *c)
 {
-	float r = 0.F;
-	r = c->genes[0] + 2 * c->genes[1] + 3 * c->genes[2] + 4 * c->genes[3] - 30.0F;
+	double r = 0.F, temp = 1.F;
+
+	for(int i = 0; i < NUM_GENES; i++)
+	{
+		r += c->genes[i] * temp;
+		temp /= (double)10.F;
+	}
+	r = r * r - 3.0;
 
 	c->objective = (r > 0.0F) ? r : -r;		// absolute value
 	c->fit = 1.F / (1.F + c->objective);	// fitness value
 }
 
 
-static int init_gene()
+static inline int init_gene()
 {
-	return rand() % 20;
+	return (rand() % 10);
 }
 
 
@@ -84,6 +92,7 @@ static void chromosome_init(s_chromosome *c, unsigned int num)
 		c->genes[i] = init_gene();		    // initialize i^th gene
 	}
 	c->num_genes = num;
+	c->objective = 1.F;
 }
 
 
@@ -105,7 +114,9 @@ static inline void chromosome_deinit(s_chromosome *c)
 static inline void print_genes(s_chromosome *c)
 {
 	for (int i = 0; i < c->num_genes; i++)
+	{
 		printf("\t%d", c->genes[i]);
+	}
 }
 
 
@@ -126,6 +137,8 @@ static void swap_chromosomes(s_chromosome *c1, s_chromosome *c2, int N)
 			c1[n].genes[i] = c2[n].genes[i];
 			c2[n].genes[i] = g;
 		}
+		c1[n].objective = c2[n].objective;
+		c1[n].fit = c2[n].fit;
 	}
 }
 
@@ -141,6 +154,8 @@ static void copy_chromosome(s_chromosome *c1, s_chromosome *c2)
 	{
 		c1->genes[i] = c2->genes[i];
 	}
+	c1->objective = c2->objective;
+	c1->fit = c2->fit;
 }
 
 
@@ -167,11 +182,9 @@ int main(int argc, char *argv[])
 	printf("Enter the chromosome population: ");
 	scanf ("%u", &pop_num);
 
-	unsigned long MAX_ITER;
-	printf("Enter maximum allowed iterations: ");
-	scanf ("%lu", &MAX_ITER);
-
+#if	DEBUG == 1
 	printf("\nInitializing and chromosome population...");
+#endif
 	s_chromosome chromos1[pop_num];
 	s_chromosome chromos2[pop_num];	// temporary storage
 	for (i = 0; i < pop_num; i++)
@@ -179,13 +192,15 @@ int main(int argc, char *argv[])
 		chromosome_init(chromos1 + i, NUM_GENES);
 		chromosome_init(chromos2 + i, NUM_GENES);
 	}
+#if	DEBUG == 1
 	printf("Done!\n\n");
+#endif
 
 	unsigned long iter = 1;
-	float objective = 1.0F;
-	while ((iter < MAX_ITER) && (objective > EPSILON))
+	while ((iter < MAX_ITER) && (chromos1[0].objective > EPSILON))
 	{
-		printf("\n\t\t\tIter# %lu\n", iter++);
+#if	DEBUG == 1
+		printf("\n\t\t\tIter# %lu\n", iter);
 		for (i = 0; i < pop_num; i++)
 		{
 			printf("\tChromosome# %d:\t", i);
@@ -194,25 +209,37 @@ int main(int argc, char *argv[])
 		}
 
 		printf("Evaluating...");
-		float F = 0.F;
+#endif
+
+		double F = 0.F;
 		for (i = 0; i < pop_num; i++)
 		{
 			cost_function(chromos1 + i);	// compute cost function for each chromosome
 			F += chromos1[i].fit;
 		}
+#if	DEBUG == 1
 		printf("Done:\t\t%f\n", chromos1[0].fit);
-		if (chromos1[0].fit == 1)
-			break;
+#endif
+		for(i = 0; i < pop_num; i++)
+			if (chromos1[i].objective <= EPSILON)
+			{
+				copy_chromosome(chromos1, chromos1 + i);
+				goto DONE_GA;
+			}
+#if	DEBUG == 1
 		printf("Selection probabilities...");
-		float C = 0.F;
+#endif
+		double C = 0.F;
 		for (i = 0; i < pop_num; i++)		// Chromosome selection probabilities
 		{
 			chromos1[i].prob = chromos1[i].fit / F;
 			C += chromos1[i].prob;
 			chromos1[i].prob = C;
 		}
+#if	DEBUG == 1
 		printf("Done\n");
 		printf("Selecting...");
+#endif
 		for (i = 0; i < pop_num; i++)
 		{
 			float R = rand2(C);		// generate a random number between 0 and C
@@ -223,9 +250,11 @@ int main(int argc, char *argv[])
 			copy_chromosome(chromos2 + i, chromos1 + ii);
 		}
 		swap_chromosomes(chromos1, chromos2, pop_num);
+#if	DEBUG == 1
 		printf("Done\n");
 		printf("Applying crossover...");
-		unsigned int posi = rand() % NUM_GENES;		// crossingover position
+#endif
+		unsigned int posi = rand() % NUM_GENES;		// crossing over position
 		unsigned int R[pop_num];
 		for (i = 0; i < pop_num; i++)
 		{
@@ -246,10 +275,12 @@ int main(int argc, char *argv[])
 					chromos1[i].genes[j] = chromos1[ii].genes[j];
 			}
 		}
+#if	DEBUG == 1
 		printf("Done\n");
 		printf("Mutating...");
+#endif
 		unsigned long L = pop_num * NUM_GENES;
-		for (i = 0; i < floor(L * MUT_RATE / 100.); i++)
+		for (i = 0; i < floor(L * MUT_RATE); i++)
 		{
 			unsigned long m = rand2(L);
 			unsigned long q, r;
@@ -257,15 +288,33 @@ int main(int argc, char *argv[])
 			r = m % NUM_GENES;
 			chromos1[q].genes[r] = init_gene();
 		}
+#if	DEBUG == 1
 		printf("Done\n");
+#endif
+		iter++;
 	}
 
+DONE_GA:
+	
+	if (chromos1[0].objective < EPSILON)
+	{
+		printf("Found solution in %lu iterations.\n", iter);
+		printf("Solution chromosome (Fitness: %g%%):\n", chromos1[0].fit * 100.F);
+		print_genes(chromos1);
+		printf("\n");
+	} else
+		printf("Could not converge to solution after %lu iterations!\n", iter);
+
+#if	DEBUG == 1
 	printf("\nDe-initializing chromosome population...");
+#endif
 	for (i = 0; i < pop_num; i++)
 	{
-		chromosome_deinit(&(chromos1[i]));
-		chromosome_deinit(&(chromos2[i]));
+		chromosome_deinit(chromos1 + i);
+		chromosome_deinit(chromos2 + i);
 	}
+#if	DEBUG == 1
 	printf("Done!\n");
+#endif
 	return 0;
 }
