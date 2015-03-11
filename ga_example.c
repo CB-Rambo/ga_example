@@ -17,14 +17,16 @@
 #include <time.h>
 #include <math.h>
 #include <omp.h>
+#include <stdlib.h>
+#include <sys/time.h>
 
 
 #define		MAX_ITER	5000	/**< maximum number of iterations to perform */
-#define		EPSILON 	1e-7	/**< minimum value for objective function */
-#define		NUM_GENES 15			/**< number of genes for this cost-function example */
-#define		RHO				0.9		/**< crossover probability */
+#define		EPSILON 	1e-2	/**< minimum value for objective function */
+#define		NUM_GENES 2			/**< number of genes for this cost-function example */
+#define		RHO				0.8		/**< crossover probability */
 #define		MUT_RATE	0.1		/**< gene mutation rate in percentage */
-#define		DEBUG			0			/**< macro to print debug messages or not */
+#define		DEBUG			1			/**< macro to print debug messages or not */
 
 
 /**
@@ -53,14 +55,16 @@ typedef struct s_chromosome
 static void cost_function(s_chromosome *c)
 {
 	double r = 0.F, temp = 1.F;
-
+/*
 	for(int i = 0; i < NUM_GENES; i++)
 	{
 		r += c->genes[i] * temp;
 		temp /= (double)10.F;
 	}
-	r = r * r - 3.0;
-
+	r = r * r * r;// - 6.F * r * r + 3.F * r - 10.0;
+*/
+  r = 4.F * (sin(c->genes[0]) + sin(c->genes[1])) + 6.F * cos(c->genes[0]) + 2.F * cos(c->genes[1]);
+  r -= 8.F;
 	c->objective = (r > 0.0F) ? r : -r;		// absolute value
 	c->fit = 1.F / (1.F + c->objective);	// fitness value
 }
@@ -68,7 +72,7 @@ static void cost_function(s_chromosome *c)
 
 static inline int init_gene()
 {
-	return (rand() % 10);
+	return (rand() % 90);
 }
 
 
@@ -116,7 +120,7 @@ static inline void print_genes(s_chromosome *c)
 {
 	for (int i = 0; i < c->num_genes; i++)
 	{
-		printf("\t%d", c->genes[i]);
+		printf("%d ", c->genes[i]);
 	}
 }
 
@@ -180,8 +184,12 @@ int main(int argc, char *argv[])
 	srand(time(NULL));		// initialize random number generator
 
 	unsigned int pop_num, i;
-	printf("Enter the chromosome population: ");
-	scanf ("%u", &pop_num);
+  if (argc == 1)
+  {
+	  printf("Enter the chromosome population: ");
+	  scanf ("%u", &pop_num);
+  } else 
+    pop_num = atoi(argv[1]);
 
 #if	DEBUG == 1
 	printf("\nInitializing and chromosome population...");
@@ -198,6 +206,9 @@ int main(int argc, char *argv[])
 #endif
 
 	unsigned long iter = 1;
+	double start_time, end_time;
+
+	start_time = omp_get_wtime();
 	while ((iter < MAX_ITER) && (chromos1[0].objective > EPSILON))
 	{
 #if	DEBUG == 1
@@ -267,16 +278,16 @@ int main(int argc, char *argv[])
 		printf("Done\n");
 		printf("Applying crossover...");
 #endif
-		unsigned int posi = rand() % NUM_GENES;		// crossing over position
 		unsigned int R[pop_num];
 		for (i = 0; i < pop_num; i++)
 		{
 			float r = rand2(1.F);		// generate a random number between 0 and 1.0
 			R[i] = (r < RHO) ? 0 : 1;
 		}
+		unsigned int posi = rand() % NUM_GENES;		// crossing over position
 #pragma omp parallel shared (R, chromos1) private(i)
 		{
-		#pragma omp for schedule(dynamic) nowait
+		#pragma omp for schedule(dynamic)
 		for (i = 0; i < pop_num; i++)
 		{
 			if (R[i])
@@ -288,7 +299,11 @@ int main(int argc, char *argv[])
 					if (ii >= pop_num)	ii = 0;
 				} while(!R[ii] && (ii != i));
 				for (int j = posi; j < NUM_GENES; j++)
+        {
+          int temp = chromos1[i].genes[j];
 					chromos1[i].genes[j] = chromos1[ii].genes[j];
+          chromos1[ii].genes[j] = temp;
+        }
 			}
 		}
 		}
@@ -313,14 +328,16 @@ int main(int argc, char *argv[])
 
 DONE_GA:
 	
+	end_time = omp_get_wtime();
 	if (chromos1[0].objective < EPSILON)
 	{
-		printf("Found solution in %lu iterations.\n", iter);
+		printf("\nFound solution in %lu iterations.\n", iter);
 		printf("Solution chromosome (Fitness: %g%%):\n", chromos1[0].fit * 100.F);
 		print_genes(chromos1);
 		printf("\n");
 	} else
-		printf("Could not converge to solution after %lu iterations!\n", iter);
+		printf("\nCould not converge to solution after %lu iterations!\n", iter);
+	printf("Actual elapsed time = %.6g s\n", end_time - start_time);
 
 #if	DEBUG == 1
 	printf("\nDe-initializing chromosome population...");

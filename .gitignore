@@ -3,3 +3,5 @@ ga_example
 ga_example.exe
 /html
 /latex
+
+*.log
