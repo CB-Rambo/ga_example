@@ -4,6 +4,7 @@ ga_example.exe
 /html
 /latex
 /CMakeFiles
+/build
 *.dll
 *.log
 *.cmake
