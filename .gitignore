@@ -9,3 +9,4 @@ ga_example.exe
 *.cmake
 CMakeCache.txt
 src/config.h
+Makefile
