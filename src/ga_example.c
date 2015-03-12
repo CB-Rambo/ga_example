@@ -26,7 +26,7 @@
 #include <sys/time.h>
 
 
-#define		MAX_ITER	5000	/**< maximum number of iterations to perform */
+#define		MAX_ITER	1000	/**< maximum number of iterations to perform */
 #define		EPSILON 	1e-6	/**< minimum value for objective function */
 #define		NUM_GENES 2			/**< number of genes for this cost-function example */
 #define		RHO				0.8		/**< crossover probability */
