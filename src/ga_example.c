@@ -12,9 +12,11 @@
 	an objective function.
 */
 
+/*
 #if OPENMP_FOUND == FALSE
 #	error "Please re-run cmake from the parent directory"
 #endif
+*/
 #include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,11 +27,11 @@
 
 
 #define		MAX_ITER	5000	/**< maximum number of iterations to perform */
-#define		EPSILON 	1e-2	/**< minimum value for objective function */
+#define		EPSILON 	1e-6	/**< minimum value for objective function */
 #define		NUM_GENES 2			/**< number of genes for this cost-function example */
 #define		RHO				0.8		/**< crossover probability */
 #define		MUT_RATE	0.1		/**< gene mutation rate in percentage */
-#define		DEBUG			1			/**< macro to print debug messages or not */
+#define		DEBUG			0			/**< macro to print debug messages or not */
 
 
 /**
@@ -57,17 +59,16 @@ typedef struct s_chromosome
 */
 static void cost_function(s_chromosome *c)
 {
+	int i;
 	double r = 0.F, temp = 1.F;
-/*
-	for(int i = 0; i < NUM_GENES; i++)
+
+	for(i = 0; i < NUM_GENES; i++)
 	{
 		r += c->genes[i] * temp;
 		temp /= (double)10.F;
 	}
-	r = r * r * r;// - 6.F * r * r + 3.F * r - 10.0;
-*/
-  r = 4.F * (sin(c->genes[0]) + sin(c->genes[1])) + 6.F * cos(c->genes[0]) + 2.F * cos(c->genes[1]);
-  r -= 8.F;
+	r = r * r - 3.F;
+
 	c->objective = (r > 0.0F) ? r : -r;		// absolute value
 	c->fit = 1.F / (1.F + c->objective);	// fitness value
 }
@@ -87,6 +88,8 @@ static inline int init_gene()
 */
 static void chromosome_init(s_chromosome *c, unsigned int num)
 {
+	int i; 
+	
 	c->genes = NULL;
 	c->num_genes = 0;
 	c->genes = malloc(num * sizeof(int));	// allocate memory for genes
@@ -95,7 +98,7 @@ static void chromosome_init(s_chromosome *c, unsigned int num)
 		printf("\n\tError initializing memory.");
 		return;
 	}
-	for (int i = 0; i < num; i++)
+	for (i = 0; i < num; i++)
 	{
 		c->genes[i] = init_gene();		    // initialize i^th gene
 	}
@@ -121,7 +124,8 @@ static inline void chromosome_deinit(s_chromosome *c)
 */
 static inline void print_genes(s_chromosome *c)
 {
-	for (int i = 0; i < c->num_genes; i++)
+	int i;
+	for (i = 0; i < c->num_genes; i++)
 	{
 		printf("%d ", c->genes[i]);
 	}
@@ -136,10 +140,10 @@ static inline void print_genes(s_chromosome *c)
 */
 static void swap_chromosomes(s_chromosome *c1, s_chromosome *c2, int N)
 {
-	int g;
-	for (int n = 0; n < N; n++)
+	int g, n, i;
+	for (n = 0; n < N; n++)
 	{
-		for (int i = 0; i < c1[n].num_genes; i++)
+		for (i = 0; i < c1[n].num_genes; i++)
 		{
 			g = c1[n].genes[i];
 			c1[n].genes[i] = c2[n].genes[i];
@@ -158,7 +162,8 @@ static void swap_chromosomes(s_chromosome *c1, s_chromosome *c2, int N)
 */
 static void copy_chromosome(s_chromosome *c1, s_chromosome *c2)
 {
-	for (int i = 0; i < c1->num_genes; i++)
+	int i;
+	for (i = 0; i < c1->num_genes; i++)
 	{
 		c1->genes[i] = c2->genes[i];
 	}
@@ -187,12 +192,14 @@ int main(int argc, char *argv[])
 	srand(time(NULL));		// initialize random number generator
 
 	unsigned int pop_num, i;
+
   if (argc == 1)
   {
 	  printf("Enter the chromosome population: ");
 	  scanf ("%u", &pop_num);
-  } else 
-    pop_num = atoi(argv[1]);
+  } else {
+		pop_num = atoi(argv[1]);
+  }
 
 #if	DEBUG == 1
 	printf("\nInitializing and chromosome population...");
@@ -295,13 +302,13 @@ int main(int argc, char *argv[])
 		{
 			if (R[i])
 			{
-				int ii = i;
+				int ii = i, j;
 				do
 				{
 					ii++;
 					if (ii >= pop_num)	ii = 0;
 				} while(!R[ii] && (ii != i));
-				for (int j = posi; j < NUM_GENES; j++)
+				for (j = posi; j < NUM_GENES; j++)
         {
           int temp = chromos1[i].genes[j];
 					chromos1[i].genes[j] = chromos1[ii].genes[j];
