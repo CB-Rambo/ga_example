@@ -3,5 +3,9 @@ ga_example
 ga_example.exe
 /html
 /latex
+/CMakeFiles
 
 *.log
+*.cmake
+CMakeCache.txt
+src/config.h

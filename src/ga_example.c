@@ -12,11 +12,14 @@
 	an objective function.
 */
 
+#if OPENMP_FOUND == FALSE
+#	error "Please re-run cmake from the parent directory"
+#endif
+#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
-#include <omp.h>
 #include <stdlib.h>
 #include <sys/time.h>
 

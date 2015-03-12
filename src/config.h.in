@@ -1,0 +1,1 @@
+#define OPENMP_FOUND @OPENMP_FOUND@
