@@ -4,11 +4,9 @@ ga_example.exe
 /html
 /latex
 /CMakeFiles
-
+*.dll
 *.log
 *.cmake
+Makefile
 CMakeCache.txt
 src/config.h
-Makefile
-Makefile
-Makefile
