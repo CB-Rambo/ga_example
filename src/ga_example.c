@@ -27,9 +27,9 @@
 
 
 #define		MAX_ITER	1000	/**< maximum number of iterations to perform */
-#define		EPSILON 	1e-6	/**< minimum value for objective function */
-#define		NUM_GENES 2			/**< number of genes for this cost-function example */
-#define		RHO				0.8		/**< crossover probability */
+#define		EPSILON 	1e-10	/**< minimum value for objective function */
+#define		NUM_GENES 20			/**< number of genes for this cost-function example */
+#define		RHO				0.6		/**< crossover probability */
 #define		MUT_RATE	0.1		/**< gene mutation rate in percentage */
 #define		DEBUG			0			/**< macro to print debug messages or not */
 
@@ -76,7 +76,7 @@ static void cost_function(s_chromosome *c)
 
 static inline int init_gene()
 {
-	return (rand() % 90);
+	return (rand() % 10);
 }
 
 
