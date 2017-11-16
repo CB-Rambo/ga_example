@@ -28,10 +28,10 @@
 
 #define		MAX_ITER	1000	/**< maximum number of iterations to perform */
 #define		EPSILON 	1e-10	/**< minimum value for objective function */
-#define		NUM_GENES 20			/**< number of genes for this cost-function example */
-#define		RHO				0.6		/**< crossover probability */
+#define		NUM_GENES 	20			/**< number of genes for this cost-function example */
+#define		RHO			0.6		/**< crossover probability */
 #define		MUT_RATE	0.1		/**< gene mutation rate in percentage */
-#define		DEBUG			0			/**< macro to print debug messages or not */
+#define		DEBUG		0			/**< macro to print debug messages or not */
 
 
 /**
@@ -193,13 +193,13 @@ int main(int argc, char *argv[])
 
 	unsigned int pop_num, i;
 
-  if (argc == 1)
-  {
+	if (argc == 1)
+	{
 	  printf("Enter the chromosome population: ");
 	  scanf ("%u", &pop_num);
-  } else {
+	} else {
 		pop_num = atoi(argv[1]);
-  }
+	}
 
 #if	DEBUG == 1
 	printf("\nInitializing and chromosome population...");
@@ -309,11 +309,11 @@ int main(int argc, char *argv[])
 					if (ii >= pop_num)	ii = 0;
 				} while(!R[ii] && (ii != i));
 				for (j = posi; j < NUM_GENES; j++)
-        {
-          int temp = chromos1[i].genes[j];
+		{
+			int temp = chromos1[i].genes[j];
 					chromos1[i].genes[j] = chromos1[ii].genes[j];
-          chromos1[ii].genes[j] = temp;
-        }
+			chromos1[ii].genes[j] = temp;
+		}
 			}
 		}
 		}
