@@ -22,6 +22,7 @@ configure_file (
 
 set(CMAKE_BINARY_DIR  bin)
 add_executable(ga_example src/ga_example.c)
+target_link_libraries(ga_example m)
 
 find_package(Doxygen)
 if (DOXYGEN_FOUND)
