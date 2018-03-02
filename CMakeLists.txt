@@ -1,8 +1,8 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 3.1)
 
-project(ga_example)
+project(gaalgo  C)
 
-if(NOT CMAKE_COMPILER_IS_GNUCC)
+if(NOT(${CMAKE_C_COMPILER_ID} MATCHES "Clang|GNU"))
 	message(SEND_ERROR "Please compile using GCC toolchain.")
 endif()
 
@@ -15,21 +15,21 @@ else (OPENMP_FOUND)
 	message(SEND_ERROR "Your GCC does not support parallel API OpenMP.")
 endif(OPENMP_FOUND)
 
-configure_file (
-	"src/config.h.in"
-	"src/config.h"
-)
+#configure_file (
+#	"src/config.h.in"
+#	"src/config.h"
+#)
 
-set(CMAKE_BINARY_DIR  bin)
-add_executable(ga_example src/ga_example.c)
-target_link_libraries(ga_example m)
+include_directories("./include")
+add_library(gaalgo STATIC ./src/ga_algo.c)
+target_link_libraries(gaalgo m)
 
-find_package(Doxygen)
-if (DOXYGEN_FOUND)
-	add_custom_target(doc 
-		COMMAND ${DOXYGEN_EXECUTABLE} 
-		${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-	)
-else (DOXYGEN_FOUND)
-	message(WARNING "Did not find Doxygen. Not building documentation")
-endif(DOXYGEN_FOUND)
+add_executable(ga_example "test/ga_example.c")
+target_link_libraries(ga_example LINK_PUBLIC gaalgo)
+
+#find_package(Doxygen)
+#if (DOXYGEN_FOUND)
+#	doxygen_add_docs(doc)
+#else (DOXYGEN_FOUND)
+#	message(WARNING "Did not find Doxygen. Not building documentation")
+#endif(DOXYGEN_FOUND)

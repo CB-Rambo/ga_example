@@ -24,28 +24,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <sys/time.h>
-
-
-#define		MAX_ITER	1000	/**< maximum number of iterations to perform */
-#define		EPSILON 	1e-10	/**< minimum value for objective function */
-#define		NUM_GENES 	20			/**< number of genes for this cost-function example */
-#define		RHO			0.6		/**< crossover probability */
-#define		MUT_RATE	0.1		/**< gene mutation rate in percentage */
-#define		DEBUG		0			/**< macro to print debug messages or not */
-
-
-/**
-	@brief Chromosome structure. Each variable identifies a gene
-	of the chromosome.
-*/
-typedef struct s_chromosome
-{
-	int *genes;							/**< pointer to an array of genes */
-	unsigned int num_genes;	/**< number of genes in the chromosome */
-	double objective;				/**< result of objective value for the chromosome */
-	double fit;							/**< fitness value of the chromosome */
-	double prob;						/**< probability of the chromosome to be selected*/
-} s_chromosome;
+#include "ga_algo.h"
 
 
 /**
@@ -57,7 +36,7 @@ typedef struct s_chromosome
 	@f$d@f$ are the four genes that form one chromosome.
 	@param[in] c 	chromosome to compute cost-function for
 */
-static void cost_function(s_chromosome *c)
+void cost_function(chromosome c)
 {
 	int i;
 	double r = 0.F, temp = 1.F;
@@ -74,55 +53,11 @@ static void cost_function(s_chromosome *c)
 }
 
 
-static inline int init_gene()
-{
-	return (rand() % 10);
-}
-
-
-/**
-	@brief Function to initialize a chromosome with an array of
-	genes of random values.
-	@param[in,out] 	c 	s_chromosome structure to initialize
-	@param[in]			num	number of genes in the chromosome
-*/
-static void chromosome_init(s_chromosome *c, unsigned int num)
-{
-	int i; 
-	
-	c->genes = NULL;
-	c->num_genes = 0;
-	c->genes = malloc(num * sizeof(int));	// allocate memory for genes
-	if(!c->genes)	// if unable to allocate
-	{
-		printf("\n\tError initializing memory.");
-		return;
-	}
-	for (i = 0; i < num; i++)
-	{
-		c->genes[i] = init_gene();		    // initialize i^th gene
-	}
-	c->num_genes = num;
-	c->objective = 1.F;
-}
-
-
-/**
-	@brief Function to de-initialize a chromosome and de-allocate
-	@param[in,out] 	c 	s_chromosome structure to de-allocate
-*/
-static inline void chromosome_deinit(s_chromosome *c)
-{
-	if(c->genes)
-		free(c->genes);		// deallocate memory for genes
-}
-
-
 /**
 	@brief Function to print genes from a chromosome
 	@param[in] 	c 	s_chromosome structure to print from
 */
-static inline void print_genes(s_chromosome *c)
+static inline void print_genes(chromosome c)
 {
 	int i;
 	for (i = 0; i < c->num_genes; i++)
@@ -131,45 +66,6 @@ static inline void print_genes(s_chromosome *c)
 	}
 }
 
-
-/**
-	@brief Function to swap genetic data between two chromosome sets
-	@param[in,out] 	c1 	array 1 of s_chromosome structure
-	@param[in,out] 	c2 	array 2 of s_chromosome structure
-	@param[in] 	N 	number of chromosomes to swap
-*/
-static void swap_chromosomes(s_chromosome *c1, s_chromosome *c2, int N)
-{
-	int g, n, i;
-	for (n = 0; n < N; n++)
-	{
-		for (i = 0; i < c1[n].num_genes; i++)
-		{
-			g = c1[n].genes[i];
-			c1[n].genes[i] = c2[n].genes[i];
-			c2[n].genes[i] = g;
-		}
-		c1[n].objective = c2[n].objective;
-		c1[n].fit = c2[n].fit;
-	}
-}
-
-
-/**
-	@brief Function to copy genetic data from one chromosome to another
-	@param[out] c1 destination s_chromosome structure
-	@param[in] 	c2 source s_chromosome structure
-*/
-static void copy_chromosome(s_chromosome *c1, s_chromosome *c2)
-{
-	int i;
-	for (i = 0; i < c1->num_genes; i++)
-	{
-		c1->genes[i] = c2->genes[i];
-	}
-	c1->objective = c2->objective;
-	c1->fit = c2->fit;
-}
 
 
 /**
@@ -201,7 +97,7 @@ int main(int argc, char *argv[])
 		pop_num = atoi(argv[1]);
 	}
 
-#if	DEBUG == 1
+#ifndef	NDEBUG
 	printf("\nInitializing and chromosome population...");
 #endif
 	s_chromosome chromos1[pop_num];
@@ -211,7 +107,7 @@ int main(int argc, char *argv[])
 		chromosome_init(chromos1 + i, NUM_GENES);
 		chromosome_init(chromos2 + i, NUM_GENES);
 	}
-#if	DEBUG == 1
+#ifndef	NDEBUG
 	printf("Done!\n\n");
 #endif
 
@@ -221,7 +117,7 @@ int main(int argc, char *argv[])
 	start_time = omp_get_wtime();
 	while ((iter < MAX_ITER) && (chromos1[0].objective > EPSILON))
 	{
-#if	DEBUG == 1
+#ifndef	NDEBUG
 		printf("\n\t\t\tIter# %lu\n", iter);
 		for (i = 0; i < pop_num; i++)
 		{
@@ -234,7 +130,7 @@ int main(int argc, char *argv[])
 #endif
 
 		double F = 0.F;
-#pragma omp parallel shared (F, chromos1) private(i)
+        #pragma omp parallel shared (F, chromos1) private(i)
 		{
 		#pragma omp for schedule(dynamic) nowait
 		for (i = 0; i < pop_num; i++)
@@ -243,7 +139,7 @@ int main(int argc, char *argv[])
 			F += chromos1[i].fit;
 		}
 		}
-#if	DEBUG == 1
+#ifndef	NDEBUG
 		printf("Done:\t\t%f\n", chromos1[0].fit);
 #endif
 		for(i = 0; i < pop_num; i++)
@@ -252,11 +148,11 @@ int main(int argc, char *argv[])
 				copy_chromosome(chromos1, chromos1 + i);
 				goto DONE_GA;
 			}
-#if	DEBUG == 1
+#ifndef	NDEBUG
 		printf("Selection probabilities...");
 #endif
 		double C = 0.F;
-#pragma omp parallel shared (C, chromos1) private(i)
+        #pragma omp parallel shared (C, chromos1) private(i)
 		{
 		#pragma omp for schedule(dynamic) nowait
 		for (i = 0; i < pop_num; i++)		// Chromosome selection probabilities
@@ -266,7 +162,7 @@ int main(int argc, char *argv[])
 			chromos1[i].prob = C;
 		}
 		}
-#if	DEBUG == 1
+#ifndef	NDEBUG
 		printf("Done\n");
 		printf("Selecting...");
 #endif
@@ -284,7 +180,7 @@ int main(int argc, char *argv[])
 		}
 		}
 		swap_chromosomes(chromos1, chromos2, pop_num);
-#if	DEBUG == 1
+#ifndef	NDEBUG
 		printf("Done\n");
 		printf("Applying crossover...");
 #endif
@@ -317,7 +213,7 @@ int main(int argc, char *argv[])
 			}
 		}
 		}
-#if	DEBUG == 1
+#ifndef	NDEBUG
 		printf("Done\n");
 		printf("Mutating...");
 #endif
@@ -330,7 +226,7 @@ int main(int argc, char *argv[])
 			r = m % NUM_GENES;
 			chromos1[q].genes[r] = init_gene();
 		}
-#if	DEBUG == 1
+#ifndef	NDEBUG
 		printf("Done\n");
 #endif
 		iter++;
@@ -349,7 +245,7 @@ DONE_GA:
 		printf("\nCould not converge to solution after %lu iterations!\n", iter);
 	printf("Actual elapsed time = %.6g s\n", end_time - start_time);
 
-#if	DEBUG == 1
+#ifndef	NDEBUG
 	printf("\nDe-initializing chromosome population...");
 #endif
 	for (i = 0; i < pop_num; i++)
@@ -357,7 +253,7 @@ DONE_GA:
 		chromosome_deinit(chromos1 + i);
 		chromosome_deinit(chromos2 + i);
 	}
-#if	DEBUG == 1
+#ifndef	NDEBUG
 	printf("Done!\n");
 #endif
 	return 0;
