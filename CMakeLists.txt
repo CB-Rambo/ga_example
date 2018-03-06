@@ -22,6 +22,7 @@ endif(OPENMP_FOUND)
 
 file(GLOB LIB_SOURCES
         ${PROJECT_SOURCE_DIR}/src/*.c
+		${PROJECT_SOURCE_DIR}/src/*.h
         )
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
