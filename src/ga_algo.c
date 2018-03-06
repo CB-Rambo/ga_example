@@ -5,10 +5,10 @@
  */
 
 #include <omp.h>
-#include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <syslog.h>
+#include "macrologger.h"
 #include "ga_algo.h"
 
 
@@ -31,18 +31,12 @@ void chromosome_init(chromosome c, unsigned int num)
 {
 	unsigned int i;
 
-#ifdef _WIN32
-    init_syslog("localhost");
-#endif
-
-    /* Log and print something with level 0. */
-    slog_live(0, "Test message with level 0");
-    /* Log and print something with level 1. */
-    slog_warn(1, "Warn message with level 1");
-    /* Log and print something with level 2. */
-    slog_info(2, "Info message with level 2");
-    /* Log and print something with level 3. */
-    slog_live(3, "Test message with level 3");
+ 	// Log and print something with level 0.
+    LOG_DEBUG("DEBUG message");
+    // Log and print something with level 1.
+    LOG_INFO("INFO message");
+    // Log and print something with level 2.
+    LOG_ERROR("ERROR message");
 
 	c->genes = NULL;
 	c->num_genes = 0;
