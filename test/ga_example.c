@@ -26,6 +26,8 @@
 #include <sys/time.h>
 #include "ga_algo.h"
 
+#define     CODON_LEN   sizeof(double)
+#define     NUM_GENES 	(2*CODON_LEN)		/**< number of genes for this cost-function example */
 
 /**
 	@brief Cost function that needs to be minimized by the algorithm.
@@ -39,16 +41,15 @@
 void cost_function(chromosome c)
 {
 	int i;
-	double r = 0.F, temp = 1.F;
+	double r = 1.F, temp = 1.F;
 
-	for(i = 0; i < NUM_GENES; i++)
+	for(i = 0; i < NUM_GENES; i+=CODON_LEN)
 	{
-		r += c->genes[i] * temp;
-		temp /= (double)10.F;
+		r *= decode_d(&c->genes[i]);
 	}
-	r = r * r - 3.F;
+	r -= 4.F;
 
-	c->objective = (r > 0.0F) ? r : -r;		// absolute value
+	c->objective = (r > 0.0F) ? r : -r;	// absolute value
 	c->fit = 1.F / (1.F + c->objective);	// fitness value
 }
 
@@ -117,6 +118,7 @@ int main(int argc, char *argv[])
 	start_time = omp_get_wtime();
 	while ((iter < MAX_ITER) && (chromos1[0].objective > EPSILON))
 	{
+/*
 #ifndef	NDEBUG
 		printf("\n\t\t\tIter# %lu\n", iter);
 		for (i = 0; i < pop_num; i++)
@@ -128,11 +130,12 @@ int main(int argc, char *argv[])
 
 		printf("Evaluating...");
 #endif
+*/
 
 		double F = 0.F;
-        #pragma omp parallel shared (F, chromos1) private(i)
+//        #pragma omp parallel shared (F, chromos1) private(i)
 		{
-		#pragma omp for schedule(dynamic) nowait
+//		#pragma omp for schedule(dynamic) nowait
 		for (i = 0; i < pop_num; i++)
 		{
 			cost_function(chromos1 + i);	// compute cost function for each chromosome
@@ -152,9 +155,9 @@ int main(int argc, char *argv[])
 		printf("Selection probabilities...");
 #endif
 		double C = 0.F;
-        #pragma omp parallel shared (C, chromos1) private(i)
+//        #pragma omp parallel shared (C, chromos1) private(i)
 		{
-		#pragma omp for schedule(dynamic) nowait
+//		#pragma omp for schedule(dynamic) nowait
 		for (i = 0; i < pop_num; i++)		// Chromosome selection probabilities
 		{
 			chromos1[i].prob = chromos1[i].fit / F;
@@ -166,9 +169,9 @@ int main(int argc, char *argv[])
 		printf("Done\n");
 		printf("Selecting...");
 #endif
-#pragma omp parallel shared (chromos1, chromos2) private(i)
+//		#pragma omp parallel shared (chromos1, chromos2) private(i)
 		{
-		#pragma omp for schedule(dynamic) nowait
+//		#pragma omp for schedule(dynamic) nowait
 		for (i = 0; i < pop_num; i++)
 		{
 			float R = rand2(C);		// generate a random number between 0 and C
@@ -191,9 +194,9 @@ int main(int argc, char *argv[])
 			R[i] = (r < RHO) ? 0 : 1;
 		}
 		unsigned int posi = rand() % NUM_GENES;		// crossing over position
-#pragma omp parallel shared (R, chromos1) private(i)
+//        #pragma omp parallel shared (R, chromos1) private(i)
 		{
-		#pragma omp for schedule(dynamic)
+//		#pragma omp for schedule(dynamic)
 		for (i = 0; i < pop_num; i++)
 		{
 			if (R[i])

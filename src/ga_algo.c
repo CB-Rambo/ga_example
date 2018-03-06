@@ -7,10 +7,13 @@
 #include <omp.h>
 #include <math.h>
 #include <stdlib.h>
+#include <mem.h>
+#include <syslog.h>
 #include "ga_algo.h"
 
 
-static inline bool init_gene()
+
+bool init_gene(void)
 {
 	if (rand() % 2 == 0)
 		return true;
@@ -19,15 +22,28 @@ static inline bool init_gene()
 }
 
 /**
-	@brief Function to initialize a chromosome with an array of
-	genes of random values.
-	@param[in,out] 	c 	s_chromosome structure to initialize
-	@param[in]			num	number of genes in the chromosome
-*/
+ * @brief Function to initialize a chromosome with an array of
+ * genes of random values.
+ * @param[in,out] 	c 	s_chromosome structure to initialize
+ * @param[in]			num	number of genes in the chromosome
+ */
 void chromosome_init(chromosome c, unsigned int num)
 {
-	unsigned int i; 
-	
+	unsigned int i;
+
+#ifdef _WIN32
+    init_syslog("localhost");
+#endif
+
+    /* Log and print something with level 0. */
+    slog_live(0, "Test message with level 0");
+    /* Log and print something with level 1. */
+    slog_warn(1, "Warn message with level 1");
+    /* Log and print something with level 2. */
+    slog_info(2, "Info message with level 2");
+    /* Log and print something with level 3. */
+    slog_live(3, "Test message with level 3");
+
 	c->genes = NULL;
 	c->num_genes = 0;
 	c->genes = (bool*) malloc(num * sizeof(int));	// allocate memory for genes
@@ -47,9 +63,9 @@ void chromosome_init(chromosome c, unsigned int num)
 }
 
 /**
-	@brief Function to de-initialize a chromosome and de-allocate
-	@param[in,out] 	c 	s_chromosome structure to de-allocate
-*/
+ * @brief Function to de-initialize a chromosome and de-allocate
+ * @param[in,out] 	c 	s_chromosome structure to de-allocate
+ */
 void chromosome_deinit(chromosome c)
 {
 	if(c->genes)
@@ -58,11 +74,11 @@ void chromosome_deinit(chromosome c)
 
 
 /**
-	@brief Function to swap genetic data between two chromosome sets
-	@param[in,out] 	c1 	array 1 of s_chromosome structure
-	@param[in,out] 	c2 	array 2 of s_chromosome structure
-	@param[in] 	N 	number of chromosomes to swap
-*/
+ * @brief Function to swap genetic data between two chromosome sets
+ * @param[in,out] 	c1 	array 1 of s_chromosome structure
+ * @param[in,out] 	c2 	array 2 of s_chromosome structure
+ * @param[in] 	N 	number of chromosomes to swap
+ */
 void swap_chromosomes(chromosome c1, chromosome c2, int N)
 {
 	int g, n, i;
@@ -81,10 +97,10 @@ void swap_chromosomes(chromosome c1, chromosome c2, int N)
 
 
 /**
-	@brief Function to copy genetic data from one chromosome to another
-	@param[out] c1 destination s_chromosome structure
-	@param[in] 	c2 source s_chromosome structure
-*/
+ * @brief Function to copy genetic data from one chromosome to another
+ * @param[out] c1 destination s_chromosome structure
+ * @param[in] 	c2 source s_chromosome structure
+ */
 void copy_chromosome(chromosome c1, chromosome c2)
 {
 	int i;
@@ -94,4 +110,15 @@ void copy_chromosome(chromosome c1, chromosome c2)
 	}
 	c1->objective = c2->objective;
 	c1->fit = c2->fit;
+}
+
+
+double decode_d(bool* gene)
+{
+	return (double)(*gene);
+}
+
+void encode_d(double val, bool* gene)
+{
+	memcpy((char*) gene, (char*) &val, sizeof(val));
 }

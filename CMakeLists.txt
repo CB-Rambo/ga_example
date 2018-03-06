@@ -20,11 +20,19 @@ endif(OPENMP_FOUND)
 #	"src/config.h"
 #)
 
-include_directories("./include")
-add_library(gaalgo STATIC ./src/ga_algo.c)
-target_link_libraries(gaalgo m)
+file(GLOB LIB_SOURCES
+        ${PROJECT_SOURCE_DIR}/src/*.c
+        )
+
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
+add_library(gaalgo STATIC ${LIB_SOURCES})
+target_include_directories(gaalgo PRIVATE "./include")
+target_link_libraries(gaalgo Threads::Threads m)
 
 add_executable(ga_example "test/ga_example.c")
+target_include_directories(ga_example PRIVATE "./include")
 target_link_libraries(ga_example LINK_PUBLIC gaalgo)
 
 #find_package(Doxygen)
